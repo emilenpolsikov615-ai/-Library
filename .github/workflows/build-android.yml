@@ -12,11 +12,23 @@ jobs:
       - name: Скачать код проекта
         uses: actions/checkout@v4
 
-      - name: Собрать apk через buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
+      - name: Установить Python
+        uses: actions/setup-python@v5
         with:
-          workdir: .
-          buildozer_version: stable
+          python-version: "3.10"
+
+      - name: Установить зависимости системы
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf \
+              libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev \
+              libffi-dev libssl-dev cmake
+
+      - name: Установить buildozer
+        run: pip install buildozer
+
+      - name: Собрать apk
+        run: buildozer android debug
 
       - name: Отправить apk в артефакты
         uses: actions/upload-artifact@v4
