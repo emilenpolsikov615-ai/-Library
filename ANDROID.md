@@ -148,6 +148,9 @@ buildozer android debug
   ```
   и перезапустите Ubuntu (команда `wsl --shutdown` в PowerShell, затем снова
   откройте Ubuntu).
+- **Сборка падает с «license is not accepted» или «Aidl not found»** — лицензии
+  Android SDK не приняты. В облачной сборке это решается автоматически
+  (шаг «Принять лицензии Android SDK» в workflow).
 - **Сборка сломалась после изменений** — выполните `buildozer android clean`,
   потом снова `buildozer android debug` (полная пересборка).
 - Подробный лог сборки выводится прямо в терминал (мы установили log_level = 2).
