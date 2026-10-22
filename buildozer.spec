@@ -41,6 +41,11 @@ android.api = 33
 # (int) Minimum API your APK / AAB will support.
 android.minapi = 21
 
+# (list) The Android archs to build for.
+# arm64-v8a покрывает все телефоны с ~2017 года и собирается вдвое быстрее,
+# чем два архитектурных варианта сразу.
+android.archs = arm64-v8a
+
 [buildozer]
 
 # (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
