@@ -4,10 +4,13 @@ from kivy.app import App
 from kivy.core.window import Window
 from kivy.factory import Factory
 from kivy.lang import Builder
+from kivy.metrics import dp
 # noinspection PyUnresolvedReferences
 from kivy.properties import NumericProperty, StringProperty
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager, SlideTransition
 
 from Db.Db import Database
@@ -132,6 +135,14 @@ KV = """
                 size_hint_x: None
                 width: dp(110)
                 on_release: app.go('profile')
+            Button:
+                id: admin_btn
+                text: 'Админ'
+                size_hint_x: None
+                width: 0 if self.disabled else dp(100)
+                opacity: 0 if self.disabled else 1
+                disabled: True
+                on_release: app.go('admin')
             Button:
                 text: 'Выйти'
                 size_hint_x: None
@@ -301,6 +312,34 @@ KV = """
                 height: self.minimum_height
                 padding: dp(8)
                 spacing: dp(8)
+
+<AdminScreen>:
+    BoxLayout:
+        orientation: 'vertical'
+        TopBar:
+            Button:
+                text: 'Назад'
+                size_hint_x: None
+                width: dp(90)
+                on_release: app.go('catalog', 'right')
+            Label:
+                text: 'Администрирование'
+                bold: True
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+        WrapLabel:
+            id: admin_info
+            font_size: '16sp'
+            color: 1, 0.85, 0.3, 1
+        ScrollView:
+            BoxLayout:
+                id: admin_users_box
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+                padding: dp(8)
+                spacing: dp(4)
 """
 
 
@@ -367,6 +406,7 @@ class CatalogScreen(Screen):
         spinner.values = ["Все"] + app.db.genres()
         if app.current_user:
             self.ids.user_label.text = "Вы вошли как: " + app.current_user["username"]
+            self.ids.admin_btn.disabled = app.current_user["role"] != "admin"
         self.refresh()
 
     def refresh(self):
@@ -382,11 +422,41 @@ class CatalogScreen(Screen):
             ))
 
 
+class AdminScreen(Screen):
+    def on_pre_enter(self, *args):
+        app = App.get_running_app()
+        users = app.db.users()
+        self.ids.admin_info.text = "Всего пользователей: %d" % len(users)
+        box = self.ids.admin_users_box
+        box.clear_widgets()
+        for u in users:
+            row = BoxLayout(size_hint_y=None, height=dp(42), spacing=dp(6))
+            name = Label(text=u["username"], size_hint_x=0.6,
+                         halign='left', valign='middle')
+            name.bind(size=lambda inst, val: setattr(inst, "text_size", val))
+            row.add_widget(name)
+            row.add_widget(Label(text="отзывов: %d" % u["reviews_count"],
+                                 size_hint_x=0.25))
+            if u["role"] == "admin" or u["id"] == app.current_user["id"]:
+                row.add_widget(Label(text="—", size_hint_x=0.15))
+            else:
+                btn = Button(text="Удалить", size_hint_x=0.15)
+                btn.bind(on_release=lambda inst, uid=u["id"]: self.delete_user(uid))
+                row.add_widget(btn)
+            box.add_widget(row)
+
+    def delete_user(self, user_id):
+        App.get_running_app().db.delete_user(user_id)
+        self.on_pre_enter()
+
+
 class ProfileScreen(Screen):
     def on_pre_enter(self, *args):
         app = App.get_running_app()
         user = app.current_user
-        self.ids.user_info.text = "Логин: %s · ID: %d" % (user["username"], user["id"])
+        role = "Администратор" if user["role"] == "admin" else "Пользователь"
+        self.ids.user_info.text = "Логин: %s · ID: %d · %s" % (
+            user["username"], user["id"], role)
         box = self.ids.my_reviews_box
         box.clear_widgets()
         reviews = app.db.user_reviews(user["id"])
@@ -475,7 +545,7 @@ class LibraryApp(App):
         self.sm = ScreenManager(transition=SlideTransition())
         for name, cls in (("login", LoginScreen), ("catalog", CatalogScreen),
                           ("book", BookScreen), ("reader", ReaderScreen),
-                          ("profile", ProfileScreen)):
+                          ("profile", ProfileScreen), ("admin", AdminScreen)):
             self.sm.add_widget(cls(name=name))
         Window.bind(on_keyboard=self._on_keyboard)
         return self.sm

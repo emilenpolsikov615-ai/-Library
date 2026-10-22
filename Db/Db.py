@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE COLLATE NOCASE,
     salt BLOB NOT NULL,
-    pw_hash BLOB NOT NULL
+    pw_hash BLOB NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user'
 );
 CREATE TABLE IF NOT EXISTS books (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,6 +30,8 @@ CREATE TABLE IF NOT EXISTS reviews (
     UNIQUE (book_id, user_id)
 );
 """
+
+ADMIN_USERNAME = "emilenpolsikov615@gmail.com"
 
 PLACEHOLDER = (
     "Здесь будет полный текст книги.\n\n"
@@ -67,7 +70,24 @@ class Database:
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA foreign_keys = ON")
         self.conn.executescript(SCHEMA)
+        self._migrate()
         self._seed()
+        self._ensure_admin()
+
+    def _migrate(self):
+        cols = [r["name"] for r in self.conn.execute("PRAGMA table_info(users)")]
+        if "role" not in cols:
+            self.conn.execute(
+                "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"
+            )
+            self.conn.commit()
+
+    def _ensure_admin(self):
+        self.conn.execute(
+            "UPDATE users SET role = 'admin' WHERE username = ?",
+            (ADMIN_USERNAME,),
+        )
+        self.conn.commit()
 
     def _seed(self):
         if self.conn.execute("SELECT COUNT(*) FROM books").fetchone()[0] == 0:
@@ -109,16 +129,19 @@ class Database:
             self.conn.commit()
         except sqlite3.IntegrityError:
             return None, "Такой логин уже занят"
-        return {"id": cur.lastrowid, "username": username}, ""
+        self._ensure_admin()
+        role = "admin" if username.lower() == ADMIN_USERNAME.lower() else "user"
+        return {"id": cur.lastrowid, "username": username, "role": role}, ""
 
     def login(self, username, password):
+        self._ensure_admin()
         row = self.conn.execute(
             "SELECT * FROM users WHERE username = ?", (username.strip(),)
         ).fetchone()
         if row is None:
             return None
         if hmac.compare_digest(row["pw_hash"], _hash(password, row["salt"])):
-            return {"id": row["id"], "username": row["username"]}
+            return {"id": row["id"], "username": row["username"], "role": row["role"]}
         return None
 
     # ---------- книги ----------
@@ -180,4 +203,17 @@ class Database:
             "rating = excluded.rating, comment = excluded.comment, created = date('now')",
             (book_id, user_id, rating, comment.strip()[:1000]),
         )
+        self.conn.commit()
+
+    # ---------- администрирование ----------
+    def users(self):
+        return self.conn.execute(
+            "SELECT u.id, u.username, u.role, COUNT(r.id) AS reviews_count "
+            "FROM users u LEFT JOIN reviews r ON r.user_id = u.id "
+            "GROUP BY u.id ORDER BY u.id"
+        ).fetchall()
+
+    def delete_user(self, user_id):
+        self.conn.execute("DELETE FROM reviews WHERE user_id = ?", (user_id,))
+        self.conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         self.conn.commit()
