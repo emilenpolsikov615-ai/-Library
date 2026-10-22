@@ -1,0 +1,26 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Скачать код проекта
+        uses: actions/checkout@v4
+
+      - name: Собрать apk через buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          workdir: .
+          buildozer_version: stable
+
+      - name: Отправить apk в артефакты
+        uses: actions/upload-artifact@v4
+        with:
+          name: library-apk
+          path: bin/*.apk
+          if-no-files-found: error
