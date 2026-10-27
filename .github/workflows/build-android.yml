@@ -54,16 +54,16 @@ jobs:
       - name: Показать ошибку сборки
         if: failure()
         run: |
-          # отрезаем итоговую сводку buildozer'а (Command failed + ENVIRONMENT)
-          body=$(sed '/^# Command failed:/,$d' build.log)
-          line=$(echo "$body" | grep -n -iE "error|traceback" | tail -1 | cut -d: -f1)
+          # убираем ANSI-цвета, затем отрезаем итоговую сводку buildozer'а
+          clean=$(perl -pe 's/\e\[[0-9;]*m//g' build.log | sed '/^# Command failed:/,$d')
+          line=$(echo "$clean" | grep -n -iE "error|traceback|failed" | tail -1 | cut -d: -f1)
           if [ -z "$line" ]; then
             echo "===== Последние 60 строк лога ====="
             tail -60 build.log
           else
-            start=$(( line > 20 ? line - 20 : 1 ))
+            start=$(( line > 25 ? line - 25 : 1 ))
             echo "===== Лог вокруг ошибки (строка $line) ====="
-            echo "$body" | sed -n "${start},$(( line + 20 ))p"
+            echo "$clean" | sed -n "${start},$(( line + 25 ))p"
           fi
 
       - name: Отправить apk в артефакты
