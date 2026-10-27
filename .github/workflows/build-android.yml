@@ -56,7 +56,7 @@ jobs:
         run: |
           # убираем ANSI-цвета, затем отрезаем итоговую сводку buildozer'а
           clean=$(perl -pe 's/\e\[[0-9;]*m//g' build.log | sed '/^# Command failed:/,$d')
-          line=$(echo "$clean" | grep -n -iE "error|traceback|failed" | tail -1 | cut -d: -f1)
+          line=$(echo "$clean" | grep -n -iE "error|traceback|failed|FAILURE:|What went wrong|Caused by|exception" | tail -1 | cut -d: -f1)
           if [ -z "$line" ]; then
             echo "===== Последние 60 строк лога ====="
             tail -60 build.log
@@ -65,6 +65,14 @@ jobs:
             echo "===== Лог вокруг ошибки (строка $line) ====="
             echo "$clean" | sed -n "${start},$(( line + 25 ))p"
           fi
+
+      - name: Сохранить лог сборки
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
 
       - name: Отправить apk в артефакты
         uses: actions/upload-artifact@v4
