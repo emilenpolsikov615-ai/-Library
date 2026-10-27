@@ -7,7 +7,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # ubuntu-24.04 ломает сборку libffi (autoconf 2.72: LT_SYS_SYMBOL_USCORE) —
+    # p4a собирается на 22.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Скачать код проекта
         uses: actions/checkout@v4
