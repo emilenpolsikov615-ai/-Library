@@ -43,7 +43,28 @@ jobs:
           # yes отвечает "y" на вопросы о лицензиях Android SDK;
           # set +o pipefail, чтобы SIGPIPE от yes (141) не красил успешный шаг
           set +o pipefail
-          yes | buildozer android debug
+          if yes | buildozer android debug > build.log 2>&1; then
+            code=0
+          else
+            code=$?
+          fi
+          echo "buildozer exit code: $code"
+          exit "$code"
+
+      - name: Показать ошибку сборки
+        if: failure()
+        run: |
+          # отрезаем итоговую сводку buildozer'а (Command failed + ENVIRONMENT)
+          body=$(sed '/^# Command failed:/,$d' build.log)
+          line=$(echo "$body" | grep -n -iE "error|traceback" | tail -1 | cut -d: -f1)
+          if [ -z "$line" ]; then
+            echo "===== Последние 60 строк лога ====="
+            tail -60 build.log
+          else
+            start=$(( line > 20 ? line - 20 : 1 ))
+            echo "===== Лог вокруг ошибки (строка $line) ====="
+            echo "$body" | sed -n "${start},$(( line + 20 ))p"
+          fi
 
       - name: Отправить apk в артефакты
         uses: actions/upload-artifact@v4
