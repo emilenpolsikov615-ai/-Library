@@ -150,7 +150,9 @@ buildozer android debug
   откройте Ubuntu).
 - **Сборка падает с «license is not accepted» или «Aidl not found»** — лицензии
   Android SDK не приняты. В облачной сборке это решается автоматически
-  (шаг «Принять лицензии Android SDK» в workflow).
+  (команда `yes | buildozer android debug` в workflow отвечает «y» на вопросы
+  sdkmanager). Не создавайте папку `android-sdk` вручную до сборки — buildozer
+  решит, что SDK уже установлен, и падёт с «sdkmanager is not installed».
 - **Сборка сломалась после изменений** — выполните `buildozer android clean`,
   потом снова `buildozer android debug` (полная пересборка).
 - Подробный лог сборки выводится прямо в терминал (мы установили log_level = 2).

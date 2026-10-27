@@ -27,23 +27,21 @@ jobs:
       - name: Установить buildozer
         run: pip install buildozer
 
-      - name: Принять лицензии Android SDK
-        run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > ~/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-
       - name: Кэш компонентов сборки
         uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
             ~/.gradle
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: buildozer-${{ runner.os }}-
+          key: buildozer-v2-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: buildozer-v2-${{ runner.os }}-
 
       - name: Собрать apk
-        run: yes | buildozer android debug
+        run: |
+          # yes отвечает "y" на вопросы о лицензиях Android SDK;
+          # set +o pipefail, чтобы SIGPIPE от yes (141) не красил успешный шаг
+          set +o pipefail
+          yes | buildozer android debug
 
       - name: Отправить apk в артефакты
         uses: actions/upload-artifact@v4
