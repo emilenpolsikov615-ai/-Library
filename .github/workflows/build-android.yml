@@ -35,8 +35,15 @@ jobs:
           path: |
             ~/.buildozer
             ~/.gradle
+            .buildozer
           key: buildozer-v2-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: buildozer-v2-${{ runner.os }}-
+
+      - name: Использовать Java 17
+        run: |
+          # на ubuntu-22.04 по умолчанию Java 11, а Android Gradle plugin требует 17
+          echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
 
       - name: Собрать apk
         run: |
