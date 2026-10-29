@@ -49,6 +49,12 @@ jobs:
         # битый venv из кэша валит сборку ImportError-ом в pip — пересоздаём его
         run: rm -rf .buildozer/android/platform/build-*/build/venv
 
+      - name: Не обновлять pip выше 25.3
+        # p4a пересоздаёт venv на каждую архитектуру; ensurepip-овский pip 25.3
+        # поверх скачанного pip 26 оставляет смесь файлов и pip ломается
+        # (ImportError: BuildDependencyInstallError)
+        run: echo "PIP_CONSTRAINT=$GITHUB_WORKSPACE/pip.constraints" >> "$GITHUB_ENV"
+
       - name: Собрать apk
         run: |
           # yes отвечает "y" на вопросы о лицензиях Android SDK;
