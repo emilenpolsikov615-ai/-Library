@@ -45,6 +45,10 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
           echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
 
+      - name: Чистое окружение pip
+        # битый venv из кэша валит сборку ImportError-ом в pip — пересоздаём его
+        run: rm -rf .buildozer/android/platform/build-*/build/venv
+
       - name: Собрать apk
         run: |
           # yes отвечает "y" на вопросы о лицензиях Android SDK;
