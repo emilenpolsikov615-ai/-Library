@@ -42,9 +42,8 @@ android.api = 33
 android.minapi = 21
 
 # (list) The Android archs to build for.
-# arm64-v8a покрывает все телефоны с ~2017 года и собирается вдвое быстрее,
-# чем два архитектурных варианта сразу.
-android.archs = arm64-v8a
+# обе архитектуры: universal APK для 64- и 32-битных телефонов
+android.archs = arm64-v8a, armeabi-v7a
 
 [buildozer]
 
